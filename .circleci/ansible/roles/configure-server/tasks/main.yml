@@ -1,10 +1,13 @@
 ---
-  - name: "Install node, npm and pm2"
+  - name: "Enable NodeSource repo"
+    become: yes
+    shell: curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+
+  - name: "Install node"
     become: yes
     apt: 
       pkg:
       - nodejs
-      - npm
 
   - name: "Install pm2"
     become: yes
