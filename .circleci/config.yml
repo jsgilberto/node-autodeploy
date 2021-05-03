@@ -1,36 +1,35 @@
 version: 2.1
 
-# commands:
-#   destroy-environment:
-#     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-#     parameters:
-#       # Add parameter here   
-#     steps:
-#       - run:
-#           name: Destroy environments
-#           when: on_fail
-#           command: |
-#             # Your code here
-#             exit 1
+commands:
+  destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    # parameters:
+    #   # Add parameter here   
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            # Your code here
+            exit 1
 
-#   revert-migrations:
-#     description: Revert the last migration if successfully run in the current workflow.
-#     parameters:
-#       # Add parameter here     
-#     steps:
-#       - run:
-#           name: Revert migrations
-#           # Add when this will run
-#           command: |
-#             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-#             SUCCESS = 1
-#             if(( $SUCCESS==1 )); 
-#             then
-#             #  cd ~/project/backend
-#             #  npm install
-#             #  Add revert code here. You can find this in the Getting Started section.
-#               exit 1
-#             fi
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.   
+    steps:
+      - run:
+          name: Revert migrations
+          when: on_fail
+          command: |
+            SUCCESS=$(curl -s \
+              -H "token: bd635c86-57e5-43b6-bcb0-ff70c7961722" \
+              --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+            )
+            if(( $SUCCESS==1 )); 
+            then
+              cd ~/project/backend
+              npm install
+              npm run migrations:revert
+            fi
             
 jobs:
   build-frontend:
@@ -187,22 +186,40 @@ jobs:
             -i .circleci/ansible/inventory.txt
       # Here's where you will add some code to rollback on failure      
 
-  # run-migrations:
-  #   docker:
-  #     # Docker image here that supports NodeJS
-  #   steps:
-  #     # Checkout code from git
-  #     - run:
-  #         name: Run migrations
-  #         command: |
-  #           # Your code here
-  #           exit 1
-  #     - run:
-  #         name: Send migration results to memstash
-  #         command: |
-  #           # Your code here
-  #           exit 1
-  #    # Here's where you will add some code to rollback on failure      
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build-v3]
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            npm i
+            MIGRATIONS_OUTPUT=$(npm run migrations)
+      - run:
+          name: Send migration results to memstash
+          command: |
+            if echo $MIGRATIONS_OUTPUT | 
+              grep -qFe "has been executed successfully"
+            then
+              curl -H "Content-Type: text/plain" \
+                -H "token: bd635c86-57e5-43b6-bcb0-ff70c7961722" \
+                --request PUT \
+                --data "1" \
+                https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+            else
+              curl -H "Content-Type: text/plain" \
+                -H "token: bd635c86-57e5-43b6-bcb0-ff70c7961722" \
+                --request PUT \
+                --data "0" \
+                https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+            fi
+      # Here's where you will add some code to rollback on failure      
+      - revert-migrations
+     
 
   # deploy-frontend:
   #   docker:
@@ -320,8 +337,8 @@ workflows:
               only: [main]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       # - deploy-frontend:
       #     requires: [run-migrations]
       # - deploy-backend:
