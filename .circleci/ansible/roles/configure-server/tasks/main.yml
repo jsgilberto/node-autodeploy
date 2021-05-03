@@ -1,0 +1,24 @@
+---
+  - name: "Install node, npm and pm2"
+    become: yes
+    apt: 
+      pkg:
+      - nodejs
+      - npm
+
+  - name: "Install pm2"
+    become: yes
+    shell: npm install pm2 -g
+
+  - name: "Cloning project from Github repository..."
+    ansible.builtin.git:
+      repo: https://github.com/jsgilberto/node-autodeploy.git
+      dest: ~/node-autodeploy
+
+  - name: "Install project dependencies"
+    shell: 
+      cmd: npm i
+      chdir: ~/node-autodeploy/backend
+
+  - name: "Automatically start pm2"
+    shell: eval $(pm2 startup | tail -1)
