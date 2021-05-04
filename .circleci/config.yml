@@ -199,6 +199,7 @@ jobs:
             cd backend
             npm i
             MIGRATIONS_OUTPUT=$(npm run migrations)
+            echo $MIGRATIONS_OUTPUT
       - run:
           name: Send migration results to memstash
           command: |
@@ -221,26 +222,32 @@ jobs:
       - revert-migrations
      
 
-  # deploy-frontend:
-  #   docker:
-  #     # Docker image here that supports AWS CLI
-  #   steps:
-  #     # Checkout code from git
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           # your code here
-  #     - run:
-  #         name: Get backend url
-  #         command: |
-  #           # your code here
-  #           export API_URL="http://${BACKEND_IP}:3030"
-  #           echo "${API_URL}"
-  #     - run:
-  #         name: Deploy frontend objects
-  #         command: |
-  #           # your code here
-  #     # Here's where you will add some code to rollback on failure      
+  deploy-frontend:
+    docker:
+      - image: sleavely/node-awscli:12.x
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            cd ~/project/frontend
+            npm i
+      - run:
+          name: Get backend url
+          command: |
+            BACKEND_IP=$(cat ~/project/.circleci/ansible/inventory.txt | tail -1)
+            echo "${BACKEND_IP}"
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+      - run:
+          name: Deploy frontend objects
+          command: |
+            cd ~/project/frontend
+            npm run build
+            aws s3 sync ~/project/frontend/dist s3://udapeople-520099902592
+      # Here's where you will add some code to rollback on failure      
                     
   # deploy-backend:
   #   docker:
