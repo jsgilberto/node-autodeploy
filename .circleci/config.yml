@@ -10,6 +10,7 @@ commands:
           command: |
             if ! command -v aws &> /dev/null
             then
+                apk --no-cache add unzip
                 echo "aws could not be found"
                 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
                 unzip awscliv2.zip
@@ -294,11 +295,16 @@ jobs:
 
   smoke-test:
     docker:
-      - image: curlimages/curl
+      - image: alpine:3.13
+      # - image: curlimages/curl
     steps:
       - checkout
       - attach_workspace:
           at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk --no-cache add curl
       - run:
           name: Get backend url
           command: |
