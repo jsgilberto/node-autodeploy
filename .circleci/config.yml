@@ -245,18 +245,14 @@ jobs:
             cd ~/project/frontend
             npm i
       - run:
-          name: Get backend url
-          command: |
-            BACKEND_IP=$(cat ~/project/.circleci/ansible/inventory.txt | tail -1)
-            echo "${BACKEND_IP}"
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-      - run:
           name: Deploy frontend objects
           command: |
+            BACKEND_IP=$(cat ~/project/.circleci/ansible/inventory.txt | tail -1)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
             cd ~/project/frontend
             npm run build
-            aws s3 sync ~/project/frontend/dist s3://udapeople-520099902592
+            aws s3 cp ~/project/frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
       # Here's where you will add some code to rollback on failure      
                     
   deploy-backend:
