@@ -1,0 +1,16 @@
+---
+  - name: Build backend
+    shell:
+      cmd: npm run build
+      chdir: ~/node-autodeploy/backend
+
+  - name: Run app
+    shell:
+      chdir: ~/node-autodeploy/backend/dist
+      cmd: |
+        pm2 start main.js
+  
+  - name: Configure pm2
+    shell: |
+      eval $(pm2 startup | tail -1)
+      pm2 save

@@ -32,6 +32,16 @@ commands:
             fi
             
 jobs:
+  echo-workflow-id:
+    docker: 
+      - image: circleci/node:13.8.0
+    steps:
+      - run:
+          name: Workflow ID
+          command: |
+            echo "CIRCLE_WORKFLOW_ID = ${CIRCLE_WORKFLOW_ID}"
+            echo "SHORT CIRCLE_WORKFLOW_ID = ${CIRCLE_WORKFLOW_ID:0:7}"
+
   build-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -249,22 +259,27 @@ jobs:
             aws s3 sync ~/project/frontend/dist s3://udapeople-520099902592
       # Here's where you will add some code to rollback on failure      
                     
-  # deploy-backend:
-  #   docker:
-  #     # Docker image here that supports Ansible
-  #   steps:
-  #     # Checkout code from git
-  #     # Add ssh keys with fingerprint
-  #     # attach workspace
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           # your code here
-  #     - run:
-  #         name: Deploy backend
-  #         command: |
-  #           # your code here
-  #     # Here's where you will add some code to rollback on failure  
+  deploy-backend:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - add_ssh_keys:
+          fingerprints:
+            - "b0:46:d8:13:ed:69:54:ed:eb:eb:68:87:a0:64:a9:c2"
+      - run:
+          name: Install ansible
+          command: |
+            apk add --update ansible
+      - run:
+          name: Deploy backend
+          command: |
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ansible-playbook .circleci/ansible/deploy-backend.yml \
+            -i .circleci/ansible/inventory.txt
+      # Here's where you will add some code to rollback on failure  
 
   # smoke-test:
   #   docker:
@@ -327,6 +342,7 @@ jobs:
 workflows:
   default:
     jobs:
+      - echo-workflow-id
       # - build-frontend
       # - build-backend
       # - test-frontend:
@@ -337,6 +353,7 @@ workflows:
       #     requires: [build-backend]
       # - scan-frontend:
       #     requires: [build-frontend]
+      
       - deploy-infrastructure:
           # requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
@@ -346,10 +363,10 @@ workflows:
           requires: [deploy-infrastructure]
       - run-migrations:
           requires: [configure-infrastructure]
-      # - deploy-frontend:
-      #     requires: [run-migrations]
-      # - deploy-backend:
-      #     requires: [run-migrations]
+      - deploy-frontend:
+          requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
       # - smoke-test:
       #     requires: [deploy-backend, deploy-frontend]
       # - cloudfront-update:
