@@ -8,7 +8,7 @@
     shell:
       chdir: ~/node-autodeploy/backend
       cmd: |
-        pm2 start .dist/main.js
+        pm2 start ./dist/main.js
   
   - name: Configure pm2
     shell: |
