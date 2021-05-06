@@ -13,7 +13,7 @@ commands:
                 echo "aws could not be found"
                 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
                 unzip awscliv2.zip
-                sudo ./aws/install
+                ./aws/install
             fi
 
             aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
