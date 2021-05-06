@@ -3,15 +3,14 @@ version: 2.1
 commands:
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-    # parameters:
-    #   # Add parameter here   
     steps:
       - run:
           name: Destroy environments
           when: on_fail
           command: |
-            # Your code here
-            exit 1
+            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+            aws cloudformation delete-stack --stack-name frontend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name backend-${CIRCLE_WORKFLOW_ID:0:7}
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.   
@@ -26,6 +25,7 @@ commands:
             )
             if(( $SUCCESS==1 )); 
             then
+              echo "Reverting migrations"
               cd ~/project/backend
               npm install
               npm run migrations:revert
@@ -169,7 +169,8 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure      
+      # Here's where you will add some code to rollback on failure
+      - destroy-environment
 
   configure-infrastructure:
     docker:
@@ -195,6 +196,7 @@ jobs:
             ansible-playbook .circleci/ansible/configure-server.yml \
             -i .circleci/ansible/inventory.txt
       # Here's where you will add some code to rollback on failure      
+      - destroy-environment
 
   run-migrations:
     docker:
@@ -230,6 +232,7 @@ jobs:
             fi
       # Here's where you will add some code to rollback on failure      
       - revert-migrations
+      - destroy-environment
      
 
   deploy-frontend:
@@ -254,6 +257,8 @@ jobs:
             npm run build
             aws s3 cp ~/project/frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
       # Here's where you will add some code to rollback on failure      
+      - revert-migrations
+      - destroy-environment
                     
   deploy-backend:
     docker:
@@ -276,6 +281,8 @@ jobs:
             ansible-playbook .circleci/ansible/deploy-backend.yml \
             -i .circleci/ansible/inventory.txt
       # Here's where you will add some code to rollback on failure  
+      - revert-migrations
+      - destroy-environment
 
   smoke-test:
     docker:
@@ -316,6 +323,8 @@ jobs:
               return 1
             fi
       # Here's where you will add some code to rollback on failure  
+      - revert-migrations
+      - destroy-environment
 
   # cloudfront-update:
   #   docker:
