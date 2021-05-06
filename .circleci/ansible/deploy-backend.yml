@@ -13,7 +13,7 @@
   environment:
     ENVIRONMENT: "production"
     TYPEORM_CONNECTION: "postgres"
-    TYPEORM_ENTITIES: "./src/modules/domain/**/*.entity.ts"
+    TYPEORM_ENTITIES: "./dist/modules/domain/*/*/*.entity.js"
     TYPEORM_HOST: "{{ lookup ('env', 'TYPEORM_HOST') }}"
     TYPEORM_PORT: "{{ lookup ('env', 'TYPEORM_PORT') }}"
     TYPEORM_USERNAME: "{{ lookup ('env', 'TYPEORM_USERNAME') }}"
