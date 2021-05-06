@@ -295,7 +295,7 @@ jobs:
 
   smoke-test:
     docker:
-      - image: alpine:3.13
+      - image: frolvlad/alpine-glibc
       # - image: curlimages/curl
     steps:
       - checkout
