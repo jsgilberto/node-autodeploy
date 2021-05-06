@@ -6,9 +6,9 @@
 
   - name: Run app
     shell:
-      chdir: ~/node-autodeploy/backend/dist
+      chdir: ~/node-autodeploy/backend
       cmd: |
-        pm2 start main.js
+        pm2 start .dist/main.js
   
   - name: Configure pm2
     shell: |
