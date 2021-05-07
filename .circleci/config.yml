@@ -178,7 +178,6 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure
       - destroy-environment
 
   configure-infrastructure:
@@ -203,8 +202,7 @@ jobs:
           command: |
             export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook .circleci/ansible/configure-server.yml \
-            -i .circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure      
+            -i .circleci/ansible/inventory.txt   
       - destroy-environment
 
   run-migrations:
@@ -238,8 +236,7 @@ jobs:
                 --request PUT \
                 --data "0" \
                 https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
-            fi
-      # Here's where you will add some code to rollback on failure      
+            fi   
       - revert-migrations
       - destroy-environment
      
@@ -264,8 +261,7 @@ jobs:
             echo "${API_URL}"
             cd ~/project/frontend
             npm run build
-            aws s3 cp ~/project/frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
-      # Here's where you will add some code to rollback on failure      
+            aws s3 cp ~/project/frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive   
       - revert-migrations
       - destroy-environment
                     
@@ -289,14 +285,12 @@ jobs:
             export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook .circleci/ansible/deploy-backend.yml \
             -i .circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure  
       - revert-migrations
       - destroy-environment
 
   smoke-test:
     docker:
       - image: frolvlad/alpine-glibc
-      # - image: curlimages/curl
     steps:
       - checkout
       - attach_workspace:
@@ -336,7 +330,6 @@ jobs:
             else
               return 1
             fi
-      # Here's where you will add some code to rollback on failure  
       - revert-migrations
       - destroy-environment
 
@@ -344,7 +337,6 @@ jobs:
     docker:
       - image: amazon/aws-cli
     steps:
-      # Checkout code from git
       - checkout
       - run:
           name: Install workspace dependencies
@@ -413,19 +405,19 @@ workflows:
   default:
     jobs:
       - echo-workflow-id
-      # - build-frontend
-      # - build-backend
-      # - test-frontend:
-      #     requires: [build-frontend]
-      # - test-backend:
-      #     requires: [build-backend]
-      # - scan-backend:
-      #     requires: [build-backend]
-      # - scan-frontend:
-      #     requires: [build-frontend]
+      - build-frontend
+      - build-backend
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
       
       - deploy-infrastructure:
-          # requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
             branches:
               only: [main]
